@@ -6,7 +6,7 @@ CityPulse is an interactive web application that visualizes cities as living org
 
 ![CityPulse Demo](https://via.placeholder.com/800x400/1e40af/ffffff?text=CityPulse+Demo)
 
-## 🏥 Concept Overview
+## Concept Overview
 
 **Core Metaphor:** Cities are living organisms with NASA data as their vital signs
 - **Heart Rate** = Traffic flow / Nighttime lights
@@ -15,7 +15,7 @@ CityPulse is an interactive web application that visualizes cities as living org
 - **Infections** = Pollution hotspots
 - **Immune Response** = Green infrastructure / Vegetation
 
-## 🚀 Features
+## Features
 
 - **Interactive Map**: Click anywhere to analyze city health
 - **Real-time Vitals**: Live data from multiple NASA and environmental APIs
@@ -23,7 +23,7 @@ CityPulse is an interactive web application that visualizes cities as living org
 - **Prescription System**: Actionable recommendations based on global case studies
 - **Medical Theme**: EKG-style animations and medical UI design
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend**: React 18 with TypeScript
 - **Mapping**: Leaflet.js with React-Leaflet
@@ -32,7 +32,7 @@ CityPulse is an interactive web application that visualizes cities as living org
 - **State Management**: React Context
 - **Build Tool**: Create React App
 
-## 📦 Installation
+## Installation
 
 1. **Clone the repository**
    ```bash
@@ -63,7 +63,7 @@ CityPulse is an interactive web application that visualizes cities as living org
 5. **Open your browser**
    Navigate to `http://localhost:3000`
 
-## 🔑 API Keys Required
+## API Keys Required
 
 ### Required APIs (Free)
 - **OpenWeatherMap**: Get your free API key at [openweathermap.org](https://openweathermap.org/api)
@@ -75,7 +75,7 @@ CityPulse is an interactive web application that visualizes cities as living org
 - **USGS Earthquake**: Natural disaster data (no key needed)
 - **NASA GIBS WMTS**: Satellite imagery (no key needed)
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 citypulse/
@@ -100,7 +100,7 @@ citypulse/
 └── README.md                      # This file
 ```
 
-## 🎯 Usage
+## Usage
 
 1. **Select a Location**: Click anywhere on the map
 2. **Wait for Analysis**: The system fetches real-time data from multiple APIs
@@ -111,12 +111,12 @@ citypulse/
 ## 📊 Data Sources
 
 ### Active APIs (6/6)
-- ✅ **OpenAQ API** - Real-time air quality data
-- ✅ **USGS Earthquake API** - Natural disaster information
-- ✅ **OpenWeatherMap API** - Weather and temperature data
-- ✅ **NASA GIBS WMTS** - Satellite imagery (thermal, NDVI, nighttime lights)
-- ✅ **GHSL API** - Population density data
-- ✅ **OpenStreetMap** - Geographic data
+- **OpenAQ API** - Real-time air quality data
+- **USGS Earthquake API** - Natural disaster information
+- **OpenWeatherMap API** - Weather and temperature data
+- **NASA GIBS WMTS** - Satellite imagery (thermal, NDVI, nighttime lights)
+- **GHSL API** - Population density data
+- **OpenStreetMap** - Geographic data
 
 ### Data Processing Pipeline
 1. **Raw API Response** → **Data Transformation** → **Health Scoring** → **CityVitals Format**
@@ -124,14 +124,14 @@ citypulse/
 3. **Caching**: 5-minute TTL for real-time data
 4. **Rate Limiting**: Exponential backoff for failed requests
 
-## 🎨 Design Features
+## Design Features
 
 - **Medical Theme**: Blue/green color palette with medical icons
 - **Animations**: Heartbeat effects, pulse animations, smooth transitions
 - **Responsive**: Mobile-first design with desktop optimization
 - **Accessibility**: ARIA labels, keyboard navigation, color-blind friendly
 
-## 🚀 Deployment
+## Deployment
 
 ### Vercel (Recommended)
 1. Connect your GitHub repository to Vercel
@@ -148,7 +148,7 @@ citypulse/
 2. Upload the `build` folder to your web server
 3. Configure environment variables on your server
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
@@ -156,11 +156,11 @@ citypulse/
 4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **NASA** for Earth observation data and APIs
 - **OpenAQ** for air quality data aggregation
@@ -169,9 +169,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Leaflet** for mapping capabilities
 - **React** and **TypeScript** communities
 
-## 📞 Support
-
-For questions or support, please open an issue on GitHub or contact the development team.
 
 ---
 
