@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityPulse - Urban Health Monitor</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .medical-card { background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 1.5rem; margin-bottom: 1rem; }
+        .heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
+        @keyframes heartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.1); } 28% { transform: scale(1); } 42% { transform: scale(1.1); } 70% { transform: scale(1); } }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-white to-green-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span class="text-white text-xl">🏥</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">CityPulse</h1>
+                        <p class="text-sm text-gray-600">Urban Health Monitor</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- City Search -->
+                    <div class="relative">
+                        <input type="text" id="citySearch" placeholder="Search cities..." 
+                               class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               style="width: 200px;">
+                        <div id="searchResults" class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
+                            <!-- Search results will appear here -->
+                        </div>
+                    </div>
+                    
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" id="mockData" checked class="rounded border-gray-300">
+                        <span class="text-gray-600">Mock Data</span>
+                    </label>
+                    <div class="text-sm text-gray-500">NASA Space Apps Challenge 2025</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+            <!-- Map Section -->
+            <div class="lg:col-span-2">
+                <div class="h-full bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div id="map" class="h-full w-full"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Vitals Panel -->
+                <div class="h-1/2">
+                    <div id="vitalsPanel" class="h-full bg-white rounded-lg shadow-lg p-6 overflow-y-auto">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 text-lg">🏥</span>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-800">City Vitals</h2>
+                        </div>
+                        
+                        <div id="noLocationMessage" class="text-center">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-gray-400 text-2xl">📍</span>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-600 mb-2">No Location Selected</h3>
+                            <p class="text-sm text-gray-500">Click on the map to analyze a city's health vitals</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnosis Card -->
+                <div id="diagnosisCard" class="h-1/2 hidden">
+                    <div class="medical-card">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 text-xl">🩺</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Health Diagnosis</h3>
+                                <p id="locationName" class="text-sm text-gray-600"></p>
+                            </div>
+                        </div>
+
+                        <div id="diagnosisContent">
+                            <!-- Diagnosis content will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div id="instructions" class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-blue-600">💡</span>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-blue-900 mb-2">How to Use CityPulse</h3>
+                    <ol class="text-blue-800 space-y-1 text-sm">
+                        <li>1. Click anywhere on the map to select a location</li>
+                        <li>2. Wait for the system to analyze city vitals</li>
+                        <li>3. Review the health diagnosis and recommendations</li>
+                        <li>4. Explore different areas to compare urban health</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 border-t border-gray-200 mt-8">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="text-center text-sm text-gray-600">
+                <p>CityPulse - Visualizing cities as living organisms using NASA Earth observation data</p>
+                <p class="mt-1">Built for NASA Space Apps Challenge 2025</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Expanded mock data for many more cities
+        const mockCities = {
+            'Los Angeles': {
+                lat: 34.0522, lon: -118.2437, country: 'USA',
+                vitals: {
+                    heartRate: { value: 75, status: 'normal', trend: 'stable', description: 'Urban activity levels are normal based on nighttime light intensity.' },
+                    temperature: { value: 22, heatIslandEffect: 3.5, status: 'normal', trend: 'stable', description: 'Current temperature: 22.0°C. Moderate heat island effect (+3.5°C).' },
+                    bloodOxygen: { value: 45, pollutants: { no2: 25, pm25: 15, o3: 35 }, status: 'healthy', trend: 'stable', description: 'Good air quality (AQI: 45). The city\'s air is clean and healthy.' },
+                    immuneSystem: { greenSpaceCoverage: 25, ndvi: 0.6, status: 'strong', trend: 'stable', description: 'Moderate green space coverage (25%). The city\'s natural immune system needs strengthening.' },
+                    infections: { disasterEvents: 1, pollutionHotspots: 3, status: 'infected', description: 'Low environmental stress (4 hazard(s) detected). Environmental monitoring needed.' },
+                    overallHealth: { score: 78, status: 'good', diagnosis: 'The city shows good overall health with minor areas for improvement. Most vital signs are within normal ranges, but there may be some environmental concerns to address.', recommendations: ['🌳 Increase urban tree canopy to filter air pollutants', '🚴 Develop comprehensive bike lane networks to reduce vehicle emissions', '🌿 Create green corridors to channel cool air through the city'] }
+                }
+            },
+            'New York': {
+                lat: 40.7128, lon: -74.0060, country: 'USA',
+                vitals: {
+                    heartRate: { value: 85, status: 'elevated', trend: 'increasing', description: 'High urban activity detected (85 bpm). The city\'s heartbeat is elevated, indicating intense urban activity.' },
+                    temperature: { value: 18, heatIslandEffect: 4.2, status: 'normal', trend: 'stable', description: 'Current temperature: 18.0°C. Strong urban heat island effect detected (+4.2°C above surrounding areas).' },
+                    bloodOxygen: { value: 55, pollutants: { no2: 35, pm25: 20, o3: 40 }, status: 'unhealthy', trend: 'worsening', description: 'Moderate air quality (AQI: 55). Minor air quality concerns.' },
+                    immuneSystem: { greenSpaceCoverage: 20, ndvi: 0.5, status: 'weak', trend: 'declining', description: 'Low green space coverage (20%). The city\'s natural immune system is compromised.' },
+                    infections: { disasterEvents: 0, pollutionHotspots: 5, status: 'infected', description: 'Moderate environmental stress (5 hazard(s) detected). Environmental monitoring needed.' },
+                    overallHealth: { score: 65, status: 'fair', diagnosis: 'The city\'s health is fair but requires attention. Several vital signs indicate moderate stress, particularly in air quality or heat management. Immediate action is recommended.', recommendations: ['🚗 Implement low-emission zones and promote electric vehicle adoption', '🌳 Increase urban tree canopy to filter air pollutants', '🏢 Mandate cool roof technologies for new and existing buildings'] }
+                }
+            },
+            'London': {
+                lat: 51.5074, lon: -0.1278, country: 'UK',
+                vitals: {
+                    heartRate: { value: 70, status: 'normal', trend: 'stable', description: 'Normal urban activity levels (70 bpm). The city\'s heartbeat is steady and healthy.' },
+                    temperature: { value: 15, heatIslandEffect: 2.8, status: 'normal', trend: 'stable', description: 'Current temperature: 15.0°C. Moderate heat island effect (+2.8°C).' },
+                    bloodOxygen: { value: 35, pollutants: { no2: 20, pm25: 12, o3: 25 }, status: 'healthy', trend: 'improving', description: 'Excellent air quality (AQI: 35). The city\'s air is clean and healthy.' },
+                    immuneSystem: { greenSpaceCoverage: 35, ndvi: 0.7, status: 'strong', trend: 'improving', description: 'Excellent green space coverage (35%). The city has a strong natural immune system.' },
+                    infections: { disasterEvents: 0, pollutionHotspots: 2, status: 'clean', description: 'No recent environmental hazards detected. The city is clean and healthy.' },
+                    overallHealth: { score: 88, status: 'excellent', diagnosis: 'This city is in excellent health! All vital signs are strong, showing a well-balanced urban ecosystem with good air quality, adequate green space, and minimal environmental hazards.', recommendations: ['✅ Continue monitoring urban health indicators', '📈 Set up long-term environmental monitoring systems', '🤝 Engage community in urban health initiatives'] }
+                }
+            },
+            'Tokyo': {
+                lat: 35.6762, lon: 139.6503, country: 'Japan',
+                vitals: {
+                    heartRate: { value: 90, status: 'elevated', trend: 'increasing', description: 'Very high urban activity detected (90 bpm). The city\'s heartbeat is racing with intense urban activity.' },
+                    temperature: { value: 20, heatIslandEffect: 5.1, status: 'normal', trend: 'stable', description: 'Current temperature: 20.0°C. Strong urban heat island effect detected (+5.1°C above surrounding areas).' },
+                    bloodOxygen: { value: 65, pollutants: { no2: 45, pm25: 25, o3: 50 }, status: 'unhealthy', trend: 'worsening', description: 'Poor air quality (AQI: 65). Air quality concerns detected.' },
+                    immuneSystem: { greenSpaceCoverage: 15, ndvi: 0.4, status: 'compromised', trend: 'declining', description: 'Low green space coverage (15%). The city\'s natural immune system is compromised.' },
+                    infections: { disasterEvents: 2, pollutionHotspots: 4, status: 'critical', description: 'High environmental stress (6 hazard(s) detected). Immediate environmental intervention required.' },
+                    overallHealth: { score: 45, status: 'poor', diagnosis: 'The city is showing signs of poor health with multiple concerning vital signs. Environmental stress is evident, and comprehensive intervention is needed to restore urban wellness.', recommendations: ['🚗 Implement low-emission zones and promote electric vehicle adoption', '🌳 Increase urban tree canopy to filter air pollutants', '🏢 Mandate cool roof technologies for new and existing buildings', '🌿 Create green corridors to channel cool air through the city'] }
+                }
+            },
+            'Paris': {
+                lat: 48.8566, lon: 2.3522, country: 'France',
+                vitals: {
+                    heartRate: { value: 65, status: 'normal', trend: 'stable', description: 'Normal urban activity levels (65 bpm). The city\'s heartbeat is steady and healthy.' },
+                    temperature: { value: 16, heatIslandEffect: 2.5, status: 'normal', trend: 'stable', description: 'Current temperature: 16.0°C. Moderate heat island effect (+2.5°C).' },
+                    bloodOxygen: { value: 30, pollutants: { no2: 15, pm25: 10, o3: 20 }, status: 'healthy', trend: 'improving', description: 'Excellent air quality (AQI: 30). The city\'s air is clean and healthy.' },
+                    immuneSystem: { greenSpaceCoverage: 40, ndvi: 0.8, status: 'strong', trend: 'improving', description: 'Excellent green space coverage (40%). The city has a strong natural immune system.' },
+                    infections: { disasterEvents: 0, pollutionHotspots: 1, status: 'clean', description: 'No recent environmental hazards detected. The city is clean and healthy.' },
+                    overallHealth: { score: 92, status: 'excellent', diagnosis: 'This city is in excellent health! All vital signs are strong, showing a well-balanced urban ecosystem with good air quality, adequate green space, and minimal environmental hazards.', recommendations: ['✅ Continue monitoring urban health indicators', '📈 Set up long-term environmental monitoring systems', '🤝 Engage community in urban health initiatives'] }
+                }
+            },
+            'Berlin': {
+                lat: 52.5200, lon: 13.4050, country: 'Germany',
+                vitals: {
+                    heartRate: { value: 68, status: 'normal', trend: 'stable', description: 'Normal urban activity levels (68 bpm). The city\'s heartbeat is steady and healthy.' },
+                    temperature: { value: 14, heatIslandEffect: 2.2, status: 'normal', trend: 'stable', description: 'Current temperature: 14.0°C. Minimal heat island effect (+2.2°C).' },
+                    bloodOxygen: { value: 28, pollutants: { no2: 12, pm25: 8, o3: 18 }, status: 'healthy', trend: 'improving', description: 'Excellent air quality (AQI: 28). The city\'s air is clean and healthy.' },
+                    immuneSystem: { greenSpaceCoverage: 45, ndvi: 0.8, status: 'strong', trend: 'improving', description: 'Excellent green space coverage (45%). The city has a strong natural immune system.' },
+                    infections: { disasterEvents: 0, pollutionHotspots: 1, status: 'clean', description: 'No recent environmental hazards detected. The city is clean and healthy.' },
+                    overallHealth: { score: 95, status: 'excellent', diagnosis: 'This city is in excellent health! All vital signs are strong, showing a well-balanced urban ecosystem with good air quality, adequate green space, and minimal environmental hazards.', recommendations: ['✅ Continue monitoring urban health indicators', '📈 Set up long-term environmental monitoring systems', '🤝 Engage community in urban health initiatives'] }
+                }
+            },
+            'Sydney': {
+                lat: -33.8688, lon: 151.2093, country: 'Australia',
+                vitals: {
+                    heartRate: { value: 72, status: 'normal', trend: 'stable', description: 'Normal urban activity levels (72 bpm). The city\'s heartbeat is steady and healthy.' },
+                    temperature: { value: 19, heatIslandEffect: 2.8, status: 'normal', trend: 'stable', description: 'Current temperature: 19.0°C. Moderate heat island effect (+2.8°C).' },
+                    bloodOxygen: { value: 38, pollutants: { no2: 18, pm25: 12, o3: 25 }, status: 'healthy', trend: 'stable', description: 'Good air quality (AQI: 38). The city\'s air is clean and healthy.' },
+                    immuneSystem: { greenSpaceCoverage: 38, ndvi: 0.7, status: 'strong', trend: 'stable', description: 'Excellent green space coverage (38%). The city has a strong natural immune system.' },
+                    infections: { disasterEvents: 1, pollutionHotspots: 2, status: 'infected', description: 'Low environmental stress (3 hazard(s) detected). Minor environmental concerns.' },
+                    overallHealth: { score: 82, status: 'good', diagnosis: 'The city shows good overall health with minor areas for improvement. Most vital signs are within normal ranges, but there may be some environmental concerns to address.', recommendations: ['🌳 Increase urban tree canopy to filter air pollutants', '🚴 Develop comprehensive bike lane networks to reduce vehicle emissions', '🌿 Create green corridors to channel cool air through the city'] }
+                }
+            },
+            'Mumbai': {
+                lat: 19.0760, lon: 72.8777, country: 'India',
+                vitals: {
+                    heartRate: { value: 95, status: 'elevated', trend: 'increasing', description: 'Very high urban activity detected (95 bpm). The city\'s heartbeat is racing with intense urban activity.' },
+                    temperature: { value: 28, heatIslandEffect: 4.5, status: 'normal', trend: 'stable', description: 'Current temperature: 28.0°C. Strong urban heat island effect detected (+4.5°C above surrounding areas).' },
+                    bloodOxygen: { value: 85, pollutants: { no2: 55, pm25: 35, o3: 60 }, status: 'hazardous', trend: 'worsening', description: 'Poor air quality (AQI: 85). Air quality is unhealthy for all residents.' },
+                    immuneSystem: { greenSpaceCoverage: 12, ndvi: 0.3, status: 'compromised', trend: 'declining', description: 'Low green space coverage (12%). The city\'s natural immune system is compromised.' },
+                    infections: { disasterEvents: 1, pollutionHotspots: 8, status: 'critical', description: 'High environmental stress (9 hazard(s) detected). Immediate environmental intervention required.' },
+                    overallHealth: { score: 35, status: 'critical', diagnosis: 'CRITICAL: The city is in poor health with multiple critical vital signs. Immediate environmental intervention is required to prevent further degradation of urban health.', recommendations: ['🚗 Implement low-emission zones and promote electric vehicle adoption', '🌳 Increase urban tree canopy to filter air pollutants', '🏢 Mandate cool roof technologies for new and existing buildings', '🌿 Create green corridors to channel cool air through the city', '💧 Implement water features and reflective surfaces in public spaces'] }
+                }
+            },
+            'São Paulo': {
+                lat: -23.5505, lon: -46.6333, country: 'Brazil',
+                vitals: {
+                    heartRate: { value: 88, status: 'elevated', trend: 'increasing', description: 'High urban activity detected (88 bpm). The city\'s heartbeat is elevated, indicating intense urban activity.' },
+                    temperature: { value: 24, heatIslandEffect: 3.8, status: 'normal', trend: 'stable', description: 'Current temperature: 24.0°C. Strong urban heat island effect detected (+3.8°C above surrounding areas).' },
+                    bloodOxygen: { value: 70, pollutants: { no2: 40, pm25: 28, o3: 45 }, status: 'unhealthy', trend: 'worsening', description: 'Poor air quality (AQI: 70). Air quality concerns detected.' },
+                    immuneSystem: { greenSpaceCoverage: 18, ndvi: 0.5, status: 'weak', trend: 'declining', description: 'Low green space coverage (18%). The city\'s natural immune system is compromised.' },
+                    infections: { disasterEvents: 2, pollutionHotspots: 6, status: 'critical', description: 'High environmental stress (8 hazard(s) detected). Immediate environmental intervention required.' },
+                    overallHealth: { score: 42, status: 'poor', diagnosis: 'The city is showing signs of poor health with multiple concerning vital signs. Environmental stress is evident, and comprehensive intervention is needed to restore urban wellness.', recommendations: ['🚗 Implement low-emission zones and promote electric vehicle adoption', '🌳 Increase urban tree canopy to filter air pollutants', '🏢 Mandate cool roof technologies for new and existing buildings', '🌿 Create green corridors to channel cool air through the city'] }
+                }
+            },
+            'Cairo': {
+                lat: 30.0444, lon: 31.2357, country: 'Egypt',
+                vitals: {
+                    heartRate: { value: 82, status: 'elevated', trend: 'increasing', description: 'High urban activity detected (82 bpm). The city\'s heartbeat is elevated, indicating intense urban activity.' },
+                    temperature: { value: 26, heatIslandEffect: 4.8, status: 'normal', trend: 'stable', description: 'Current temperature: 26.0°C. Strong urban heat island effect detected (+4.8°C above surrounding areas).' },
+                    bloodOxygen: { value: 75, pollutants: { no2: 50, pm25: 30, o3: 55 }, status: 'hazardous', trend: 'worsening', description: 'Poor air quality (AQI: 75). Air quality is unhealthy for all residents.' },
+                    immuneSystem: { greenSpaceCoverage: 8, ndvi: 0.2, status: 'compromised', trend: 'declining', description: 'Very low green space coverage (8%). The city\'s natural immune system is severely compromised.' },
+                    infections: { disasterEvents: 1, pollutionHotspots: 7, status: 'critical', description: 'High environmental stress (8 hazard(s) detected). Immediate environmental intervention required.' },
+                    overallHealth: { score: 28, status: 'critical', diagnosis: 'CRITICAL: The city is in poor health with multiple critical vital signs. Immediate environmental intervention is required to prevent further degradation of urban health.', recommendations: ['🚗 Implement low-emission zones and promote electric vehicle adoption', '🌳 Increase urban tree canopy to filter air pollutants', '🏢 Mandate cool roof technologies for new and existing buildings', '🌿 Create green corridors to channel cool air through the city', '💧 Implement water features and reflective surfaces in public spaces'] }
+                }
+            }
+        };
+
+        let map, selectedLocation = null, currentMarker = null;
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([34.0522, -118.2437], 10);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add click handler
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lon = e.latlng.lng;
+                
+                // Find closest city
+                let closestCity = 'Los Angeles';
+                let minDistance = Infinity;
+                
+                for (const [cityName, cityData] of Object.entries(mockCities)) {
+                    const distance = Math.sqrt(
+                        Math.pow(lat - cityData.lat, 2) + Math.pow(lon - cityData.lon, 2)
+                    );
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestCity = cityName;
+                    }
+                }
+                
+                selectedLocation = { lat, lon, city: closestCity };
+                showLoading();
+                
+                // Simulate API call delay
+                setTimeout(() => {
+                    showVitals(mockCities[closestCity]);
+                }, 2000);
+            });
+
+            // Add instruction overlay
+            const instructionDiv = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background: #3b82f6; color: white; padding: 8px 12px; border-radius: 6px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">Click anywhere to analyze city health</div>',
+                iconSize: [200, 40],
+                iconAnchor: [100, 20]
+            });
+            
+            L.marker([34.0522, -118.2437], { icon: instructionDiv }).addTo(map);
+        }
+
+        // City search functionality
+        function setupCitySearch() {
+            const searchInput = document.getElementById('citySearch');
+            const searchResults = document.getElementById('searchResults');
+            
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase();
+                
+                if (query.length < 2) {
+                    searchResults.classList.add('hidden');
+                    return;
+                }
+                
+                const matches = Object.entries(mockCities).filter(([cityName, cityData]) => 
+                    cityName.toLowerCase().includes(query) || 
+                    cityData.country.toLowerCase().includes(query)
+                );
+                
+                if (matches.length === 0) {
+                    searchResults.innerHTML = '<div class="p-3 text-gray-500 text-sm">No cities found</div>';
+                } else {
+                    searchResults.innerHTML = matches.map(([cityName, cityData]) => `
+                        <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
+                             onclick="selectCity('${cityName}')">
+                            <div class="font-medium text-gray-900">${cityName}</div>
+                            <div class="text-sm text-gray-500">${cityData.country}</div>
+                        </div>
+                    `).join('');
+                }
+                
+                searchResults.classList.remove('hidden');
+            });
+            
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.add('hidden');
+                }
+            });
+        }
+
+        // Select city from search
+        function selectCity(cityName) {
+            const cityData = mockCities[cityName];
+            if (!cityData) return;
+            
+            // Update map view
+            map.setView([cityData.lat, cityData.lon], 12);
+            
+            // Add marker
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+            
+            currentMarker = L.marker([cityData.lat, cityData.lon], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background: #10b981; color: white; padding: 6px 10px; border-radius: 4px; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${cityName}</div>`,
+                    iconSize: [120, 30],
+                    iconAnchor: [60, 15]
+                })
+            }).addTo(map);
+            
+            // Set selected location
+            selectedLocation = { lat: cityData.lat, lon: cityData.lon, city: cityName };
+            
+            // Clear search
+            document.getElementById('citySearch').value = '';
+            document.getElementById('searchResults').classList.add('hidden');
+            
+            // Show loading and then vitals
+            showLoading();
+            setTimeout(() => {
+                showVitals(cityData);
+            }, 2000);
+        }
+
+        function showLoading() {
+            document.getElementById('vitalsPanel').innerHTML = `
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 text-lg">🏥</span>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-800">City Vitals</h2>
+                </div>
+                <div class="text-center py-8">
+                    <div class="heartbeat mb-4">
+                        <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto">
+                            <span class="text-white text-2xl">❤️</span>
+                        </div>
+                    </div>
+                    <div class="text-lg font-medium text-gray-700 mb-2">Analyzing city vitals...</div>
+                    <div class="flex justify-center space-x-1">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showVitals(cityData) {
+            const vitals = cityData.vitals;
+            
+            document.getElementById('vitalsPanel').innerHTML = `
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 text-lg">🏥</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800">City Vitals</h2>
+                        <p class="text-sm text-gray-600">${selectedLocation.city}</p>
+                    </div>
+                </div>
+
+                <!-- Overall Health Score -->
+                <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold text-gray-800">Overall Health</h3>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(vitals.overallHealth.status)}">
+                            ${vitals.overallHealth.status.toUpperCase()}
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-3xl font-bold text-blue-600">${vitals.overallHealth.score}</div>
+                        <div class="flex-1">
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-blue-500 h-3 rounded-full transition-all duration-500" style="width: ${vitals.overallHealth.score}%"></div>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">Health Score</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Individual Vitals -->
+                <div class="space-y-4">
+                    ${createVitalCard('💓', 'Heart Rate', vitals.heartRate.value, 'bpm', vitals.heartRate.status, vitals.heartRate.trend, vitals.heartRate.description)}
+                    ${createVitalCard('🌡️', 'Temperature', vitals.temperature.value, '°C', vitals.temperature.status, vitals.temperature.trend, vitals.temperature.description)}
+                    ${createVitalCard('🫁', 'Air Quality', vitals.bloodOxygen.value, 'AQI', vitals.bloodOxygen.status, vitals.bloodOxygen.trend, vitals.bloodOxygen.description)}
+                    ${createVitalCard('🌿', 'Green Space', vitals.immuneSystem.greenSpaceCoverage, '%', vitals.immuneSystem.status, vitals.immuneSystem.trend, vitals.immuneSystem.description)}
+                    ${createVitalCard('🦠', 'Infections', vitals.infections.disasterEvents + vitals.infections.pollutionHotspots, '', vitals.infections.status, 'stable', vitals.infections.description)}
+                </div>
+            `;
+
+            // Show diagnosis card
+            document.getElementById('diagnosisCard').classList.remove('hidden');
+            document.getElementById('locationName').textContent = selectedLocation.city;
+            document.getElementById('diagnosisContent').innerHTML = `
+                <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-2xl">${getStatusIcon(vitals.overallHealth.status)}</span>
+                            <span class="font-semibold text-lg">${vitals.overallHealth.status.toUpperCase()}</span>
+                        </div>
+                        <div class="text-2xl font-bold">${vitals.overallHealth.score}/100</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-800 mb-2">Medical Assessment</h4>
+                    <p class="text-gray-700 leading-relaxed">${vitals.overallHealth.diagnosis}</p>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">Prescribed Solutions</h4>
+                    <div class="space-y-2">
+                        ${vitals.overallHealth.recommendations.map(rec => `
+                            <div class="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg">
+                                <span class="text-blue-600 text-sm font-medium mt-0.5">${vitals.overallHealth.recommendations.indexOf(rec) + 1}.</span>
+                                <span class="text-sm text-gray-700 flex-1">${rec}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Hide instructions
+            document.getElementById('instructions').style.display = 'none';
+        }
+
+        function createVitalCard(icon, title, value, unit, status, trend, description) {
+            return `
+                <div class="medical-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-2xl">${icon}</span>
+                            <h4 class="font-semibold text-gray-800">${title}</h4>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-2xl font-bold text-gray-800">${value}</span>
+                            <span class="text-sm text-gray-500">${unit}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}">
+                            ${status}
+                        </span>
+                        <span class="text-sm text-gray-600">${getTrendIcon(trend)} ${trend}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">${description}</p>
+                </div>
+            `;
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'healthy': case 'normal': case 'strong': case 'excellent':
+                    return 'text-green-600 bg-green-100';
+                case 'unhealthy': case 'elevated': case 'weak': case 'good':
+                    return 'text-yellow-600 bg-yellow-100';
+                case 'hazardous': case 'critical': case 'compromised': case 'poor':
+                    return 'text-red-600 bg-red-100';
+                case 'infected':
+                    return 'text-orange-600 bg-orange-100';
+                default:
+                    return 'text-gray-600 bg-gray-100';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'excellent': return '🟢';
+                case 'good': return '🔵';
+                case 'fair': return '🟡';
+                case 'poor': return '🟠';
+                case 'critical': return '🔴';
+                default: return '⚪';
+            }
+        }
+
+        function getTrendIcon(trend) {
+            switch (trend) {
+                case 'increasing': case 'worsening': return '📈';
+                case 'decreasing': case 'improving': return '📉';
+                case 'stable': return '➡️';
+                default: return '➡️';
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            setupCitySearch();
+        });
+    </script>
+</body>
+</html>
