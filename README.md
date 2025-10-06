@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CityPulse - Urban Health Monitor
 ## NASA Space Apps Challenge 2025
 
@@ -175,3 +176,6 @@ For questions or support, please open an issue on GitHub or contact the developm
 ---
 
 **Built with ❤️ for NASA Space Apps Challenge 2025**
+=======
+# city-health-doctor
+>>>>>>> e2a441948327219e8e4a3adb482ba57fc79d25d8
