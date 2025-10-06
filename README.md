@@ -108,7 +108,7 @@ citypulse/
 4. **Read Diagnosis**: Get AI-generated health assessment
 5. **Follow Prescriptions**: Implement recommended solutions
 
-## 📊 Data Sources
+## Data Sources
 
 ### Active APIs (6/6)
 - **OpenAQ API** - Real-time air quality data
